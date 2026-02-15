@@ -1,0 +1,1168 @@
+﻿<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>Siria AI </title>
+<link rel="icon" type="image/png" href="/static/طراحی بدون عنوان (1).png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --pink: #fbcfe8;
+  --pink-soft: #fdf2f8;
+  --border: #e5e7eb;
+  --text: #111827;
+  --text-muted: #888888;
+}
+* { box-sizing: border-box; margin:0; padding:0; }
+body { font-family: 'Poppins', sans-serif; height:100vh; display:flex; flex-direction:column; background:#fff; overflow:hidden; }
+.ai-loader {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin-top: 10px;
+  margin-right: 0;
+  border: none;
+  padding: 0;
+  background: transparent;
+}
+.ai-loader div {
+  width: 10px;
+  height: 10px;
+  background: #000;
+  border-radius: 50%;
+  opacity: 0.3;
+  animation: bounce 1s infinite;
+  border: none;
+}
+.ai-loader div:nth-child(2) { animation-delay: 0.2s; }
+.ai-loader div:nth-child(3) { animation-delay: 0.4s; }
+
+
+
+@keyframes bounce {
+  0%, 80%, 100% { transform: scale(0); opacity:0.3; }
+  40% { transform: scale(1); opacity:1; }
+}
+
+.nav {
+  position: fixed;       /* همیشه ثابت باشه */
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 12000px;
+  height: 55px;
+  display: flex;
+  direction: ltr;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 10px;
+  background: #fff;
+  border-radius: 0;
+  transition: all 0.35s ease;  /* smooth تغییرات */
+  z-index: 100;
+}
+
+.nav.scrolled {
+  height: 50px;
+  position: fixed;
+  top: 10px;
+  direction: ltr;
+
+  left: 50%;
+  transform: translateX(-50%);
+
+  width: calc(100% - 40px); /* فاصله از چپ و راست */
+  max-width: 1200px;       /* تو مانیتور بزرگ قشنگ می‌مونه */
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 0 16px;
+
+
+  background: rgba(255, 255, 255, 0.29);
+  border-bottom: 1px solid var(--border);
+  backdrop-filter: blur(5px) saturate(130%);
+  -webkit-backdrop-filter: blur(10px) saturate(140%);
+  border-radius: 30px;
+  z-index: 100;
+}
+
+
+
+.menu { display:flex; align-items:center; cursor:pointer; }
+.menu-icon { color:#000000; transition: transform .2s ease, color .2s ease; }
+.menu:hover .menu-icon { transform:scale(1.1) rotate(2deg); color:#000000; }
+.logo { font-size:24px; font-weight:550; color:var(--text); margin-left:15px; white-space: nowrap;}
+
+/* سایدبار */
+.sidebar { position: fixed; top:0; left:-300px; width:300px; height:100%; background:#fff; border-right:1px solid var(--border); padding:14px; transition:0.25s; z-index:25; overflow-y:auto; }
+.sidebar.active { left:0; z-index:100}
+.sidebar-header {
+  display:flex;
+  direction: rtl;
+  align-items:center;
+  justify-content:space-between;
+  margin-top:6px;
+  margin-bottom:24px;
+}
+.item { padding:12px; border-radius:10px; background:#f0eeeeda; margin-bottom:15px; cursor:pointer; margin-top:0; display:flex; justify-content:left; align-items:center; }
+.history-container { margin-top:10px; display:flex; flex-direction:column; gap:10px; }
+.history-item { padding:8px 10px; background:#f3f3f3; border-radius:8px; display:flex; justify-content:space-between; align-items:center; cursor:pointer; direction: ltr; }
+.delete-btn { margin-left:8px; cursor:pointer; font-size:16px; }
+
+/* بکدراب */
+#backdrop { position:fixed; inset:0; background:rgba(0,0,0,0.25); opacity:0; pointer-events:none; transition:0.25s; z-index:24; }
+#backdrop.active { opacity:1; pointer-events:auto; }
+
+/* چت */
+.chat { flex:1; display:flex; flex-direction:column; overflow:hidden; position: relative; }
+.chat-body { flex:1; padding:20px; overflow-y:auto; margin-bottom: 95px; }
+
+/* پیام‌ها */
+.msg {margin-top: 40px; max-width:70%; padding:14px 16px; border-radius:16px; margin-bottom:16px; line-height:1.7; word-break:break-word; }
+.user { background:rgb(245, 245, 245); border:1px solid var(--border); border-bottom-right-radius:4px; }
+.ai-wrap { display:flex;  align-items:flex-start; }
+.avatar { width:45px; height:45px; border-radius:50%; overflow:hidden; display:flex; justify-content:center; align-items:center; background:#fff; }
+.avatar img { width:100%; height:100%; object-fit:cover; border-radius:50%; }
+.ai { 
+  border-bottom-right-radius: 3px;
+  border: 1px solid var(--border);
+  margin-top: 50px;
+  margin-right: -30px; }
+.ai pre { background:#111827; color:#fff; padding:12px; border-radius:10px; overflow-x:auto; direction:ltr; }
+.ai code { color:#01922a; font-family:monospace; }
+
+
+.input-box {
+  position:absolute;
+  top:50%;
+  left:50%;
+  transform:translate(-50%,-50%);
+  display:flex;
+  flex-direction: row-reverse; /* ✅ دکمه سمت راست */
+  align-items:center;
+  width:50%;
+  max-width:90%;
+  padding:12px 14px;
+  border-radius:25px;
+  border:1px solid var(--border);
+  background:#fff;
+  transition: position 0.3s ease, transform 0.3s ease;
+  z-index:10;
+}
+
+.input-box input {
+  flex:1;
+  padding:12px 16px;
+  border-radius:25px;
+  border:1px solid var(--border);
+  font-size:16px;
+  font-family:inherit;
+  outline:none;
+  direction: ltr;
+  margin-left:8px; /* فاصله از دکمه */
+}
+.input-box textarea {
+  flex: 1;
+  padding: 12px 16px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  font-size: 16px;
+  font-family: inherit;
+  outline: none;
+  resize: none;              /* ❌ کاربر نتونه دستی بکشه */
+  overflow-y: hidden;        /* اسکرول نده */
+  line-height: 1.6;
+  max-height: 150px;         /* سقف ارتفاع */
+  direction: ltr;
+}
+
+.send-icon {
+  width:40px;
+  height:40px;
+  border-radius:50%;
+  background:#000;
+  color:#fff;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  cursor:pointer;
+  margin-left: 6px;
+  flex-shrink:0;
+  transition:all 0.2s ease;
+}
+
+.input-box.active { position:fixed; top:auto; bottom:22px; left:50%; transform:translateX(-50%); }
+
+
+
+
+
+.imc {
+  display: flex;
+  align-items:center;
+  height: 60px;
+}
+.imc img {
+  display:block;
+  width:60px;
+  height:60px;
+  object-fit:contain;
+}
+
+.auth-btn {
+  width:42px;
+  height:42px;
+  border:1px solid var(--border);
+  border-radius:50%;
+  background:#fff;
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.auth-btn svg { width:22px; height:22px; color:#111827; }
+
+.auth-modal {
+  position:fixed;
+  inset:0;
+  display:none;
+  z-index:200;
+}
+.auth-modal.active { display:block; }
+.auth-overlay {
+  position:absolute;
+  inset:0;
+  background:rgba(0,0,0,0.35);
+}
+.auth-card {
+  position:absolute;
+  left:50%;
+  top:50%;
+  transform:translate(-50%, -50%);
+  width:min(92vw, 420px);
+  background:#fff;
+  border-radius:16px;
+  border:1px solid var(--border);
+  padding:22px;
+  box-shadow:0 12px 28px rgba(17,24,39,.14);
+  font-family:'Vazirmatn', 'Poppins', sans-serif;
+}
+.auth-tabs { display:flex; gap:8px; margin-bottom:16px; }
+.auth-tab {
+  border:1px solid var(--border);
+  background:#f8fafc;
+  padding:9px 13px;
+  border-radius:10px;
+  cursor:pointer;
+  font-family:'Vazirmatn', 'Poppins', sans-serif;
+  font-size:14px;
+  font-weight:600;
+}
+.auth-tab.active {
+  background:#111827;
+  color:#fff;
+}
+.auth-form { display:none; }
+.auth-form.active { display:block; }
+.auth-form input {
+  width:100%;
+  border:1px solid #d1d5db;
+  border-radius:12px;
+  padding:11px 12px;
+  margin-bottom:12px;
+  font-family:'Vazirmatn', 'Poppins', sans-serif;
+  font-size:14px;
+  transition:border-color .2s ease, box-shadow .2s ease;
+}
+.auth-form input:focus {
+  border-color:#111827;
+  box-shadow:0 0 0 3px rgba(17,24,39,.10);
+  outline:none;
+}
+.password-wrap {
+  position: relative;
+}
+.password-wrap input {
+  padding-left: 44px;
+}
+.toggle-pass {
+  position: absolute;
+  left: 10px;
+  top: 40%;
+  transform: translateY(-50%);
+  border: none;
+  background: transparent;
+  color: #6b7280;
+  cursor: pointer;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.toggle-pass svg {
+  width: 19px;
+  height: 19px;
+  stroke: currentColor;
+  fill: none;
+}
+.auth-submit {
+  width:100%;
+  border:none;
+  border-radius:12px;
+  padding:11px;
+  background:#000000;
+  color:#fff;
+  cursor:pointer;
+  font-family:'Vazirmatn', 'Poppins', sans-serif;
+  font-size:14px;
+  font-weight:700;
+}
+.auth-status {
+  min-height:20px;
+  margin-top:10px;
+  font-size:13px;
+  font-family:'Vazirmatn', 'Poppins', sans-serif;
+}
+
+
+
+.model{
+  background-color: #E4E4F6;
+  border-radius: 50px;
+  color:#5D5BD0;
+  width: 65px;
+  text-align: center;
+  font-size: 15px;
+  font-weight: 600;
+  justify-content: space-between;
+  position: relative;
+  cursor: default;
+
+}
+.model::after{
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: -34px;
+  left: 35%;
+  transform: translateX(-50%);
+  background: #111827;
+  color: #fff;
+  font-size: 12px;
+  padding: 5px 8px;
+  border-radius: 8px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .2s ease;
+}
+.model:hover::after{
+  opacity: 1;
+}
+/* پیام خوش‌آمدگویی */
+#welcomeMsg {
+  position:absolute;
+  font-size:28px;
+  font-weight:600;
+  color:#111827;
+  text-align:center;
+  transition: opacity 0.3s ease, top 0.3s ease;
+  z-index:5;
+  left:50%;
+  transform:translateX(-50%);
+  margin-top: -150px;
+}
+.item .btn-icon {
+  width:40px;  /* اندازه آیکون */
+  height:23px;
+  object-fit:contain;
+}
+.sidebar-user {
+  font-size:14px;
+  color:#000000;
+  margin-top:-8px;
+  margin-bottom:10px;
+}
+/* پایین صفحه متن کم‌رنگ */
+.footer-text { text-align:center; color:var(--text-muted); font-size:12px; padding:1px; }
+
+/* ریسپانسیو */
+@media(max-width:768px){
+  .msg { max-width:85%; }
+  .sidebar { width:50vw; left:-50vw; }
+  .sidebar.active { left:0;z-index:100 }
+  .input-box, .input-box.active { width:90%; }
+  #welcomeMsg {
+    writing-mode: horizontal-tb; /* افقی */
+    text-align: center;
+    margin-top:50px;
+    white-space: normal;
+    white-space: nowrap; /* ✅ متن روی یک خط */
+    max-width: 90%;      /* حداکثر پهنا برای موبایل */
+    overflow: hidden;     /* متن اضافه مخفی شود */
+    text-overflow: ellipsis; /* اگر خیلی طولانی شد، ... نمایش دهد */
+  }
+
+  .model{
+    background-color:#E4E4F6;
+    color: #5D5BD0;
+    border-radius: 50px;
+    width: 65px;
+    white-space: nowrap;
+    text-align: center;
+    font-size: 14px;
+    font-weight: 550;
+    justify-content: space-between;
+  }
+.imc{
+  display: flex;
+  width: 60px;
+  height: 60px;
+  margin-right: 0;
+}
+}
+.scroll-bottom { scroll-behavior:smooth; }
+</style>
+</head>
+<body>
+
+<!-- نوار بالا -->
+<div class="nav">
+  <div class="menu" onclick="toggleSidebar()">
+    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="menu-icon">
+      <line x1="2" y1="5" x2="20" y2="5"/>
+      <line x1="4" y1="12" x2="14" y2="12"/>
+      <line x1="2" y1="19" x2="21" y2="19"/>
+    </svg>
+    <div class="logo">Siria AI</div>
+  </div>
+  <div class="model" data-tooltip="Model of Siria">isi - 1.0</div>
+</div>
+
+<!-- سایدبار -->
+<div class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <button class="auth-btn" id="openAuthBtn" title="Login / Signup">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-7.5A2.25 2.25 0 003.75 5.25v13.5A2.25 2.25 0 006 21h7.5a2.25 2.25 0 002.25-2.25V15m-4.5-3h9m0 0l-3-3m3 3l-3 3"/>
+      </svg>
+    </button>
+    <div class="imc">
+      <img src="/static/siria b.png">
+    </div>
+  </div>
+  <div class="sidebar-user" id="sidebarUser">Guest</div>
+  <div class="item" id="newChatBtn">
+    <img src="/static/icons8-chat-30.png" class="btn-icon">
+    New Chat
+  </div>
+  <div class="item" id="chatHistoryBtn">
+    <img src="/static/icons8-history-50.png" class="btn-icon">
+    Chat History
+  </div>
+
+  <div class="history-container" id="historyContainer"></div>
+</div>
+
+<div class="auth-modal" id="authModal">
+  <div class="auth-overlay" id="authOverlay"></div>
+  <div class="auth-card">
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="tabLogin">ورود</button>
+      <button class="auth-tab" id="tabSignup">ثبت نام</button>
+    </div>
+
+    <form class="auth-form active" id="loginForm">
+      <input id="loginUsername" type="text" placeholder="Username" required>
+      <div class="password-wrap">
+        <input id="loginPassword" type="password" placeholder="Password" required>
+        <button type="button" class="toggle-pass" data-target="loginPassword" aria-label="Show password">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="1.8">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12s3.75-6.75 9.75-6.75S21.75 12 21.75 12s-3.75 6.75-9.75 6.75S2.25 12 2.25 12z"/>
+            <circle cx="12" cy="12" r="3"/>
+          </svg>
+        </button>
+      </div>
+      <button class="auth-submit" type="submit">ورود</button>
+    </form>
+
+    <form class="auth-form" id="signupForm">
+      <input id="signupName" type="text" placeholder="Name" required>
+      <input id="signupUsername" type="text" placeholder="Username" required>
+      <div class="password-wrap">
+        <input id="signupPassword" type="password" placeholder="Password (6+)" required>
+        <button type="button" class="toggle-pass" data-target="signupPassword" aria-label="Show password">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="1.8">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12s3.75-6.75 9.75-6.75S21.75 12 21.75 12s-3.75 6.75-9.75 6.75S2.25 12 2.25 12z"/>
+            <circle cx="12" cy="12" r="3"/>
+          </svg>
+        </button>
+      </div>
+      <button class="auth-submit" type="submit">ثبت نام</button>
+    </form>
+
+    <div class="auth-status" id="authStatus"></div>
+  </div>
+</div>
+<div id="backdrop"></div>
+<div id="welcomeMsg"></div>
+<div class="chat">
+  <div class="chat-body" id="chat"></div>
+  <div class="input-box" id="inputBox">
+    <textarea id="input" placeholder="Ask anything" rows="1"></textarea>
+    <div class="send-icon" id="sendBtn">➤</div>
+  </div>
+</div>
+<div class="footer-text">. Siria can make mistakes</div>
+<script>
+/* =======================
+   ELEMENTS
+======================= */
+const sidebar = document.getElementById("sidebar");
+const backdrop = document.getElementById("backdrop");
+const newChatBtn = document.getElementById("newChatBtn");
+const historyContainer = document.getElementById("historyContainer");
+const chatEl = document.getElementById("chat");
+const inputEl = document.getElementById("input");
+const sendBtn = document.getElementById("sendBtn");
+const inputBox = document.getElementById("inputBox");
+const welcomeMsg = document.getElementById("welcomeMsg");
+const nav = document.querySelector(".nav");
+const chatBody = document.querySelector(".chat-body");
+const openAuthBtn = document.getElementById("openAuthBtn");
+const authModal = document.getElementById("authModal");
+const authOverlay = document.getElementById("authOverlay");
+const tabLogin = document.getElementById("tabLogin");
+const tabSignup = document.getElementById("tabSignup");
+const loginForm = document.getElementById("loginForm");
+const signupForm = document.getElementById("signupForm");
+const authStatus = document.getElementById("authStatus");
+const sidebarUser = document.getElementById("sidebarUser");
+const togglePassBtns = document.querySelectorAll(".toggle-pass");
+
+let autoScrollAI = false;
+let chats = [];
+let activeChatId = null;
+let firstMessageSent = false;
+let activeTyping = null;
+let requestSeq = 0;
+let currentUser = null;
+let guestId = null;
+const GENERIC_SERVER_ERROR = "خطای اتصال به سرور";
+const LOGIN_REQUIRED_ERROR = "برای ادامه چت، لطفا وارد حساب شوید یا ثبت نام کنید.";
+
+/* =======================
+   WELCOME TEXTS
+======================= */
+const welcomeTexts = [
+  "? How can I help you",
+  "? What is in your mind",
+  "? Ready to chat with Siria",
+  "! Ask me anything",
+  "? Where should we begin"
+];
+
+function setWelcomeMessage() {
+  if (firstMessageSent) return;
+  welcomeMsg.innerText = welcomeTexts[Math.floor(Math.random() * welcomeTexts.length)];
+  welcomeMsg.style.opacity = 1;
+
+  if (window.innerWidth > 768) {
+    welcomeMsg.style.top = "calc(50% - 80px)";
+    welcomeMsg.style.left = "50%";
+    welcomeMsg.style.transform = "translateX(-50%)";
+  } else {
+    const mid = nav.offsetHeight + (inputBox.offsetTop - nav.offsetHeight) / 2;
+    welcomeMsg.style.top = mid + "px";
+    welcomeMsg.style.left = "50%";
+    welcomeMsg.style.transform = "translate(-50%, -50%)";
+  }
+}
+
+function hideWelcome() {
+  welcomeMsg.style.opacity = 0;
+}
+
+/* =======================
+   STORAGE
+======================= */
+function saveChats() {
+  localStorage.setItem(getChatStorageKey(), JSON.stringify(chats));
+}
+
+function loadChats() {
+  const data = localStorage.getItem(getChatStorageKey());
+  chats = data ? JSON.parse(data) : [];
+  activeChatId = chats.length ? chats[0].id : null;
+  firstMessageSent = false;
+}
+
+function getChatStorageKey() {
+  if (currentUser?.username) {
+    return `chats_user_${currentUser.username}`;
+  }
+  return `chats_guest_${guestId || "anonymous"}`;
+}
+function saveUser(user, options = {}) {
+  const { skipChatInit = false } = options;
+  currentUser = user;
+  if (user) {
+    localStorage.setItem("auth_user", JSON.stringify(user));
+  } else {
+    localStorage.removeItem("auth_user");
+  }
+  sidebarUser.textContent = user ? user.username : "Guest";
+  updateAuthButton();
+  if (skipChatInit) return;
+  loadChats();
+  if (chats.length === 0) {
+    createNewChat();
+  } else {
+    renderActiveChat();
+    renderHistory();
+  }
+}
+function loadUser() {
+  const raw = localStorage.getItem("auth_user");
+  if (!raw) {
+    saveUser(null, { skipChatInit: true });
+    return;
+  }
+  try {
+    saveUser(JSON.parse(raw), { skipChatInit: true });
+  } catch {
+    saveUser(null, { skipChatInit: true });
+  }
+}
+
+function getOrCreateGuestId() {
+  const key = "guest_id";
+  let id = localStorage.getItem(key);
+  if (!id) {
+    id = `guest_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+    localStorage.setItem(key, id);
+  }
+  return id;
+}
+
+function getLoginIcon() {
+  return `
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-7.5A2.25 2.25 0 003.75 5.25v13.5A2.25 2.25 0 006 21h7.5a2.25 2.25 0 002.25-2.25V15m-4.5-3h9m0 0l-3-3m3 3l-3 3"/>
+    </svg>
+  `;
+}
+
+function getLogoutIcon() {
+  return `
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 9V5.25A2.25 2.25 0 0110.5 3h7.5a2.25 2.25 0 012.25 2.25v13.5A2.25 2.25 0 0118 21h-7.5a2.25 2.25 0 01-2.25-2.25V15M15 12H3m0 0l3 3m-3-3l3-3"/>
+    </svg>
+  `;
+}
+
+function updateAuthButton() {
+  if (currentUser) {
+    openAuthBtn.title = "Logout";
+    openAuthBtn.innerHTML = getLogoutIcon();
+  } else {
+    openAuthBtn.title = "Login / Signup";
+    openAuthBtn.innerHTML = getLoginIcon();
+  }
+}
+
+function getEyeOpenIcon() {
+  return `
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="1.8">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12s3.75-6.75 9.75-6.75S21.75 12 21.75 12s-3.75 6.75-9.75 6.75S2.25 12 2.25 12z"/>
+      <circle cx="12" cy="12" r="3"/>
+    </svg>
+  `;
+}
+
+function getEyeClosedIcon() {
+  return `
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="1.8">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M3 3l18 18"/>
+      <path stroke-linecap="round" stroke-linejoin="round" d="M10.58 10.58A2 2 0 0013.42 13.42"/>
+      <path stroke-linecap="round" stroke-linejoin="round" d="M9.88 5.1A10.46 10.46 0 0112 4.88c6 0 9.75 7.12 9.75 7.12a16.12 16.12 0 01-3.12 3.94"/>
+      <path stroke-linecap="round" stroke-linejoin="round" d="M6.53 6.53A16.27 16.27 0 002.25 12s3.75 6.75 9.75 6.75a10.42 10.42 0 004.11-.84"/>
+    </svg>
+  `;
+}
+
+/* =======================
+   HISTORY
+======================= */
+function renderHistory() {
+  historyContainer.innerHTML = "";
+  chats.forEach((c, i) => {
+    const div = document.createElement("div");
+    div.className = "history-item";
+    div.innerHTML = `<span>Chat ${chats.length - i}</span><span class="delete-btn" title="Delete">🗑️</span>`;
+    div.onclick = (e) => {
+      if (e.target.classList.contains("delete-btn")) {
+        chats = chats.filter(ch => ch.id !== c.id);
+        saveChats();
+        renderHistory();
+        if (activeChatId === c.id) createNewChat();
+        return;
+      }
+      setActiveChat(c.id);
+      sidebar.classList.remove("active");
+      backdrop.classList.remove("active");
+    };
+    historyContainer.appendChild(div);
+  });
+}
+
+/* =======================
+   CHAT MANAGEMENT
+======================= */
+function createNewChat() {
+  const chat = { id: Date.now(), messages: [] };
+  chats.unshift(chat);
+  activeChatId = chat.id;
+  saveChats();
+  renderActiveChat();
+  renderHistory();
+}
+
+function setActiveChat(id) {
+  activeChatId = id;
+  renderActiveChat();
+}
+
+function getActiveChat() {
+  let chat = chats.find(c => c.id === activeChatId);
+  if (!chat) {
+    createNewChat();
+    chat = chats[0];
+  }
+  return chat;
+}
+
+/* =======================
+   RENDERING
+======================= */
+function renderActiveChat() {
+  chatEl.innerHTML = "";
+  const chat = getActiveChat();
+  chat.messages.forEach(msg => {
+    if (msg.role === "user") {
+      renderUser(msg.content);
+    } else if (msg.pending) {
+      renderAIPending();
+    } else {
+      renderAI(msg.content, false);
+    }
+  });
+  updateChatViewportState();
+  scrollDown(true);
+}
+
+function updateChatViewportState() {
+  const chat = chats.find(c => c.id === activeChatId);
+  const hasMessages = Boolean(chat && Array.isArray(chat.messages) && chat.messages.length > 0);
+  firstMessageSent = hasMessages;
+  inputBox.classList.toggle("active", hasMessages);
+  if (hasMessages) {
+    hideWelcome();
+  } else {
+    setWelcomeMessage();
+  }
+}
+
+function renderUser(text) {
+  if (!firstMessageSent) {
+    inputBox.classList.add("active");
+    hideWelcome();
+    firstMessageSent = true;
+  }
+  const div = document.createElement("div");
+  div.className = "msg user";
+  div.innerText = text;
+  chatEl.appendChild(div);
+  scrollDown(true);
+}
+
+function renderAI(text, typing = true) {
+  const wrap = document.createElement("div");
+  wrap.className = "ai-wrap";
+
+  const avatar = document.createElement("div");
+  avatar.className = "avatar";
+  avatar.innerHTML = `<img src="/static/siria b.png">`;
+
+  const msg = document.createElement("div");
+  msg.className = "msg ai";
+
+  const loader = document.createElement("div");
+  loader.className = "ai-loader";
+  loader.innerHTML = `<div></div><div></div><div></div>`;
+
+  wrap.appendChild(avatar);
+  wrap.appendChild(msg);
+  chatEl.appendChild(wrap);
+
+  if (typing) {
+    msg.appendChild(loader);
+    autoScrollAI = true;
+    typeEffect(msg, text, loader);
+  } else {
+    msg.innerHTML = parseMarkdown(text);
+    scrollDown(true);
+  }
+}
+
+function renderAIPending() {
+  const wrap = document.createElement("div");
+  wrap.className = "ai-wrap";
+
+  const avatar = document.createElement("div");
+  avatar.className = "avatar";
+  avatar.innerHTML = `<img src="/static/siria b.png">`;
+
+  const msg = document.createElement("div");
+  msg.className = "msg ai";
+
+  const loader = document.createElement("div");
+  loader.className = "ai-loader";
+  loader.innerHTML = `<div></div><div></div><div></div>`;
+
+  msg.appendChild(loader);
+  wrap.appendChild(avatar);
+  wrap.appendChild(msg);
+  chatEl.appendChild(wrap);
+  scrollDown(true);
+}
+
+/* =======================
+   TYPE EFFECT
+======================= */
+function finishTyping() {
+  if (!activeTyping) return;
+  clearInterval(activeTyping.interval);
+  activeTyping.el.innerHTML = activeTyping.parsed;
+  activeTyping = null;
+}
+
+function typeEffect(el, text, loader=null) {
+  finishTyping();
+  let i = 0;
+  const parsed = parseMarkdown(text);
+  const temp = document.createElement("div");
+  temp.innerHTML = parsed;
+  const plain = temp.innerText;
+
+  el.innerText = "";
+  activeTyping = { el, parsed, interval: null };
+  autoScrollAI = true;
+
+  const interval = setInterval(() => {
+    el.innerText += plain[i];
+    i++;
+    scrollDown(true);
+    if (i >= plain.length) {
+      clearInterval(interval);
+      if (loader) loader.remove();
+      el.innerHTML = parsed;
+      activeTyping = null;
+      autoScrollAI = false;
+    }
+  }, 18);
+
+  activeTyping.interval = interval;
+}
+
+/* =======================
+   MARKDOWN PARSER
+======================= */
+function parseMarkdown(text) {
+  return text
+    .replace(/```([\s\S]*?)```/g, "<pre><code>$1</code></pre>")
+    .replace(/\*\*(.*?)\*\*/g, "<b>$1</b>")
+    .replace(/\n/g, "<br>");
+}
+
+/* =======================
+   SCROLL
+======================= */
+function isNearBottom() {
+  return chatEl.scrollHeight - (chatEl.scrollTop + chatEl.clientHeight) < 120;
+}
+
+function scrollDown(force=false) {
+  if (force || isNearBottom()) chatEl.scrollTop = chatEl.scrollHeight;
+}
+
+/* =======================
+   SEND MESSAGE
+======================= */
+async function send() {
+  const text = inputEl.value.trim();
+  if (!text) return;
+
+  const chat = getActiveChat();
+  chat.messages.push({ role: "user", content: text });
+  renderUser(text);
+
+  inputEl.value = "";
+  inputEl.style.height = "auto";
+  saveChats();
+
+  const requestId = `req_${Date.now()}_${++requestSeq}`;
+  const chatIdAtSend = chat.id;
+  chat.messages.push({ role: "ai", content: "", pending: true, requestId });
+  saveChats();
+
+  const wrap = document.createElement("div");
+  wrap.className = "ai-wrap";
+
+  const avatar = document.createElement("div");
+  avatar.className = "avatar";
+  avatar.innerHTML = `<img src="/static/siria b.png">`;
+
+  const msg = document.createElement("div");
+  msg.className = "msg ai";
+
+  const loader = document.createElement("div");
+  loader.className = "ai-loader";
+  loader.innerHTML = `<div></div><div></div><div></div>`;
+
+  msg.appendChild(loader);
+  wrap.appendChild(avatar);
+  wrap.appendChild(msg);
+  chatEl.appendChild(wrap);
+  scrollDown(true);
+
+  try {
+    const res = await fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        message: text,
+        conversation_id: chat.serverId || null,
+        username: currentUser ? currentUser.username : null,
+        guest_id: currentUser ? null : guestId
+      }),
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      const errMessage = res.status === 403
+        ? (data.error || LOGIN_REQUIRED_ERROR)
+        : GENERIC_SERVER_ERROR;
+      const error = new Error(errMessage);
+      error.status = res.status;
+      throw error;
+    }
+    const reply = data.reply || "Error receiving reply";
+
+    const targetChat = chats.find(c => c.id === chatIdAtSend);
+    if (!targetChat) return;
+
+    targetChat.serverId = data.conversation_id;
+    const pendingIndex = targetChat.messages.findIndex(
+      m => m.role === "ai" && m.pending && m.requestId === requestId
+    );
+
+    if (pendingIndex !== -1) {
+      targetChat.messages[pendingIndex] = { role: "ai", content: reply };
+    } else {
+      targetChat.messages.push({ role: "ai", content: reply });
+    }
+    saveChats();
+
+    if (activeChatId === chatIdAtSend) {
+      if (document.body.contains(msg)) {
+        msg.innerHTML = "";
+        typeEffect(msg, reply, loader);
+      } else {
+        renderActiveChat();
+      }
+    }
+  } catch (err) {
+    const targetChat = chats.find(c => c.id === chatIdAtSend);
+    const errText = err?.status === 403
+      ? (err?.message || LOGIN_REQUIRED_ERROR)
+      : GENERIC_SERVER_ERROR;
+
+    if (targetChat) {
+      const pendingIndex = targetChat.messages.findIndex(
+        m => m.role === "ai" && m.pending && m.requestId === requestId
+      );
+      if (pendingIndex !== -1) {
+        targetChat.messages[pendingIndex] = { role: "ai", content: errText };
+      } else {
+        targetChat.messages.push({ role: "ai", content: errText });
+      }
+      saveChats();
+    }
+
+    if (activeChatId === chatIdAtSend) {
+      if (document.body.contains(msg)) {
+        msg.innerHTML = errText;
+      } else {
+        renderActiveChat();
+      }
+    }
+
+    if (err?.status === 403) {
+      authModal.classList.add("active");
+      showAuthTab("login");
+      authStatus.textContent = errText;
+    }
+  }
+}
+/* =======================
+   INPUT BEHAVIOR
+======================= */
+inputEl.addEventListener("keydown", e => {
+  if (e.key === "Enter" && !e.shiftKey && !(e.ctrlKey && e.shiftKey)) {
+    e.preventDefault();
+    send();
+  }
+});
+
+inputEl.addEventListener("input", () => {
+  inputEl.style.height = "auto";
+  inputEl.style.height = inputEl.scrollHeight + "px";
+});
+
+sendBtn.addEventListener("click", send);
+
+/* =======================
+   SIDEBAR
+======================= */
+function toggleSidebar() {
+  sidebar.classList.toggle("active");
+  backdrop.classList.toggle("active");
+}
+
+backdrop.addEventListener("click", () => {
+  sidebar.classList.remove("active");
+  backdrop.classList.remove("active");
+});
+
+newChatBtn.addEventListener("click", () => {
+  createNewChat();
+  sidebar.classList.remove("active");
+  backdrop.classList.remove("active");
+});
+
+function showAuthTab(tab) {
+  const isLogin = tab === "login";
+  tabLogin.classList.toggle("active", isLogin);
+  tabSignup.classList.toggle("active", !isLogin);
+  loginForm.classList.toggle("active", isLogin);
+  signupForm.classList.toggle("active", !isLogin);
+  authStatus.textContent = "";
+}
+
+openAuthBtn.addEventListener("click", () => {
+  if (currentUser) {
+    saveUser(null);
+    authModal.classList.remove("active");
+    return;
+  }
+  authModal.classList.add("active");
+  showAuthTab("login");
+});
+
+authOverlay.addEventListener("click", () => {
+  authModal.classList.remove("active");
+});
+
+tabLogin.addEventListener("click", () => showAuthTab("login"));
+tabSignup.addEventListener("click", () => showAuthTab("signup"));
+
+togglePassBtns.forEach((btn) => {
+  btn.addEventListener("click", () => {
+    const input = document.getElementById(btn.dataset.target);
+    if (!input) return;
+    const show = input.type === "password";
+    input.type = show ? "text" : "password";
+    btn.innerHTML = show ? getEyeClosedIcon() : getEyeOpenIcon();
+    btn.setAttribute("aria-label", show ? "Hide password" : "Show password");
+  });
+});
+
+loginForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  authStatus.textContent = "در حال ورود...";
+  const username = document.getElementById("loginUsername").value.trim();
+  const password = document.getElementById("loginPassword").value;
+
+  try {
+    const res = await fetch("/api/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "login failed");
+    saveUser(data.user);
+    authStatus.textContent = "ورود موفق بود";
+    setTimeout(() => authModal.classList.remove("active"), 500);
+  } catch (err) {
+    authStatus.textContent = err.message;
+  }
+});
+
+signupForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  authStatus.textContent = "در حال ثبت نام...";
+  const name = document.getElementById("signupName").value.trim();
+  const username = document.getElementById("signupUsername").value.trim();
+  const password = document.getElementById("signupPassword").value;
+
+  try {
+    const res = await fetch("/api/signup", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, username, password })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "signup failed");
+    saveUser(data.user);
+    authStatus.textContent = "ثبت نام موفق بود";
+    setTimeout(() => authModal.classList.remove("active"), 500);
+  } catch (err) {
+    authStatus.textContent = err.message;
+  }
+});
+
+/* =======================
+   INIT
+======================= */
+window.addEventListener("DOMContentLoaded", () => {
+  guestId = getOrCreateGuestId();
+  loadUser();
+  loadChats();
+  createNewChat();
+});
+
+chatBody.addEventListener("scroll", () => {
+  nav.classList.toggle("scrolled", chatBody.scrollTop > 40);
+  if (!isNearBottom()) autoScrollAI = false;
+});
+
+window.addEventListener("resize", () => {
+  if (!firstMessageSent) setWelcomeMessage();
+});
+window.addEventListener("blur", finishTyping);
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) finishTyping();
+});
+</script>
+
+</body>
+</html>
