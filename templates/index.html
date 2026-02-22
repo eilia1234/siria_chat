@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head>
 <meta charset="UTF-8">
@@ -195,6 +195,9 @@ body { font-family: 'Poppins', sans-serif; height:100vh; display:flex; flex-dire
   margin-left: 6px;
   flex-shrink:0;
   transition:all 0.2s ease;
+}
+.send-icon.stop {
+  background: #ef4444;
 }
 
 .input-box.active { position:fixed; top:auto; bottom:22px; left:50%; transform:translateX(-50%); }
@@ -475,8 +478,8 @@ body { font-family: 'Poppins', sans-serif; height:100vh; display:flex; flex-dire
   <div class="auth-overlay" id="authOverlay"></div>
   <div class="auth-card">
     <div class="auth-tabs">
-      <button class="auth-tab active" id="tabLogin">ورود</button>
-      <button class="auth-tab" id="tabSignup">ثبت نام</button>
+      <button class="auth-tab active" id="tabLogin">login</button>
+      <button class="auth-tab" id="tabSignup">sign up</button>
     </div>
 
     <form class="auth-form active" id="loginForm">
@@ -490,7 +493,7 @@ body { font-family: 'Poppins', sans-serif; height:100vh; display:flex; flex-dire
           </svg>
         </button>
       </div>
-      <button class="auth-submit" type="submit">ورود</button>
+      <button class="auth-submit" type="submit">login</button>
     </form>
 
     <form class="auth-form" id="signupForm">
@@ -505,7 +508,7 @@ body { font-family: 'Poppins', sans-serif; height:100vh; display:flex; flex-dire
           </svg>
         </button>
       </div>
-      <button class="auth-submit" type="submit">ثبت نام</button>
+      <button class="auth-submit" type="submit">sign up</button>
     </form>
 
     <div class="auth-status" id="authStatus"></div>
@@ -555,8 +558,22 @@ let activeTyping = null;
 let requestSeq = 0;
 let currentUser = null;
 let guestId = null;
+let activeRequest = null;
+let isGenerating = false;
 const GENERIC_SERVER_ERROR = "خطای اتصال به سرور";
 const LOGIN_REQUIRED_ERROR = "برای ادامه چت، لطفا وارد حساب شوید یا ثبت نام کنید.";
+
+function setSendButtonState(isGenerating) {
+  if (isGenerating) {
+    sendBtn.classList.add("stop");
+    sendBtn.textContent = "■";
+    sendBtn.title = "Stop generating";
+  } else {
+    sendBtn.classList.remove("stop");
+    sendBtn.textContent = "➤";
+    sendBtn.title = "Send";
+  }
+}
 
 /* =======================
    WELCOME TEXTS
@@ -639,6 +656,20 @@ function loadUser() {
     saveUser(JSON.parse(raw), { skipChatInit: true });
   } catch {
     saveUser(null, { skipChatInit: true });
+  }
+}
+
+async function syncAuthUser() {
+  try {
+    const res = await fetch("/api/me", { method: "GET", credentials: "same-origin" });
+    const data = await res.json();
+    if (res.ok && data?.authenticated && data?.user) {
+      saveUser(data.user, { skipChatInit: true });
+      return;
+    }
+    saveUser(null, { skipChatInit: true });
+  } catch {
+    loadUser();
   }
 }
 
@@ -852,9 +883,33 @@ function finishTyping() {
   clearInterval(activeTyping.interval);
   activeTyping.el.innerHTML = activeTyping.parsed;
   activeTyping = null;
+  autoScrollAI = false;
+  if (!activeRequest) {
+    isGenerating = false;
+    setSendButtonState(false);
+  }
 }
 
-function typeEffect(el, text, loader=null) {
+function stopTypingAtCurrentPoint() {
+  if (!activeTyping) return false;
+  clearInterval(activeTyping.interval);
+  const partial = activeTyping.el.innerText;
+  const targetChat = chats.find(c => c.id === activeTyping.chatId);
+  if (targetChat) {
+    const aiIndex = targetChat.messages.findIndex(
+      m => m.role === "ai" && m.requestId === activeTyping.requestId
+    );
+    if (aiIndex !== -1) {
+      targetChat.messages[aiIndex] = { role: "ai", content: partial, requestId: activeTyping.requestId };
+      saveChats();
+    }
+  }
+  activeTyping = null;
+  autoScrollAI = false;
+  return true;
+}
+
+function typeEffect(el, text, loader=null, meta = {}, onDone = null) {
   finishTyping();
   let i = 0;
   const parsed = parseMarkdown(text);
@@ -863,7 +918,13 @@ function typeEffect(el, text, loader=null) {
   const plain = temp.innerText;
 
   el.innerText = "";
-  activeTyping = { el, parsed, interval: null };
+  activeTyping = {
+    el,
+    parsed,
+    interval: null,
+    chatId: meta.chatId || null,
+    requestId: meta.requestId || null
+  };
   autoScrollAI = true;
 
   const interval = setInterval(() => {
@@ -876,6 +937,7 @@ function typeEffect(el, text, loader=null) {
       el.innerHTML = parsed;
       activeTyping = null;
       autoScrollAI = false;
+      if (typeof onDone === "function") onDone();
     }
   }, 18);
 
@@ -907,6 +969,11 @@ function scrollDown(force=false) {
    SEND MESSAGE
 ======================= */
 async function send() {
+  if (isGenerating) {
+    stopGenerating();
+    return;
+  }
+
   const text = inputEl.value.trim();
   if (!text) return;
 
@@ -920,6 +987,7 @@ async function send() {
 
   const requestId = `req_${Date.now()}_${++requestSeq}`;
   const chatIdAtSend = chat.id;
+  const controller = new AbortController();
   chat.messages.push({ role: "ai", content: "", pending: true, requestId });
   saveChats();
 
@@ -942,15 +1010,19 @@ async function send() {
   wrap.appendChild(msg);
   chatEl.appendChild(wrap);
   scrollDown(true);
+  activeRequest = { requestId, chatId: chatIdAtSend, controller };
+  isGenerating = true;
+  setSendButtonState(true);
 
   try {
     const res = await fetch("/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "same-origin",
+      signal: controller.signal,
       body: JSON.stringify({
         message: text,
         conversation_id: chat.serverId || null,
-        username: currentUser ? currentUser.username : null,
         guest_id: currentUser ? null : guestId
       }),
     });
@@ -975,21 +1047,38 @@ async function send() {
     );
 
     if (pendingIndex !== -1) {
-      targetChat.messages[pendingIndex] = { role: "ai", content: reply };
+      targetChat.messages[pendingIndex] = { role: "ai", content: reply, requestId };
     } else {
-      targetChat.messages.push({ role: "ai", content: reply });
+      targetChat.messages.push({ role: "ai", content: reply, requestId });
     }
     saveChats();
 
     if (activeChatId === chatIdAtSend) {
       if (document.body.contains(msg)) {
         msg.innerHTML = "";
-        typeEffect(msg, reply, loader);
+        typeEffect(
+          msg,
+          reply,
+          loader,
+          { chatId: chatIdAtSend, requestId },
+          () => {
+            isGenerating = false;
+            setSendButtonState(false);
+          }
+        );
       } else {
         renderActiveChat();
+        isGenerating = false;
+        setSendButtonState(false);
       }
+    } else {
+      isGenerating = false;
+      setSendButtonState(false);
     }
   } catch (err) {
+    if (err.name === "AbortError") {
+      return;
+    }
     const targetChat = chats.find(c => c.id === chatIdAtSend);
     const errText = err?.status === 403
       ? (err?.message || LOGIN_REQUIRED_ERROR)
@@ -1020,7 +1109,42 @@ async function send() {
       showAuthTab("login");
       authStatus.textContent = errText;
     }
+    isGenerating = false;
+    setSendButtonState(false);
+  } finally {
+    if (activeRequest && activeRequest.requestId === requestId) {
+      activeRequest = null;
+    }
   }
+}
+
+function stopGenerating() {
+  if (stopTypingAtCurrentPoint()) {
+    activeRequest = null;
+    isGenerating = false;
+    setSendButtonState(false);
+    return;
+  }
+  if (!activeRequest) return;
+  const { requestId, chatId, controller } = activeRequest;
+  controller.abort();
+
+  const targetChat = chats.find(c => c.id === chatId);
+  if (targetChat) {
+    const pendingIndex = targetChat.messages.findIndex(
+      m => m.role === "ai" && m.pending && m.requestId === requestId
+    );
+    if (pendingIndex !== -1) {
+      targetChat.messages[pendingIndex] = { role: "ai", content: "⏹ پاسخ متوقف شد." };
+      saveChats();
+    }
+  }
+  if (activeChatId === chatId) {
+    renderActiveChat();
+  }
+  activeRequest = null;
+  isGenerating = false;
+  setSendButtonState(false);
 }
 /* =======================
    INPUT BEHAVIOR
@@ -1067,8 +1191,11 @@ function showAuthTab(tab) {
   authStatus.textContent = "";
 }
 
-openAuthBtn.addEventListener("click", () => {
+openAuthBtn.addEventListener("click", async () => {
   if (currentUser) {
+    try {
+      await fetch("/api/logout", { method: "POST", credentials: "same-origin" });
+    } catch {}
     saveUser(null);
     authModal.classList.remove("active");
     return;
@@ -1105,6 +1232,7 @@ loginForm.addEventListener("submit", async (e) => {
     const res = await fetch("/api/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "same-origin",
       body: JSON.stringify({ username, password })
     });
     const data = await res.json();
@@ -1117,6 +1245,7 @@ loginForm.addEventListener("submit", async (e) => {
   }
 });
 
+
 signupForm.addEventListener("submit", async (e) => {
   e.preventDefault();
   authStatus.textContent = "در حال ثبت نام...";
@@ -1128,6 +1257,7 @@ signupForm.addEventListener("submit", async (e) => {
     const res = await fetch("/api/signup", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "same-origin",
       body: JSON.stringify({ name, username, password })
     });
     const data = await res.json();
@@ -1143,11 +1273,12 @@ signupForm.addEventListener("submit", async (e) => {
 /* =======================
    INIT
 ======================= */
-window.addEventListener("DOMContentLoaded", () => {
+window.addEventListener("DOMContentLoaded", async () => {
   guestId = getOrCreateGuestId();
-  loadUser();
+  await syncAuthUser();
   loadChats();
   createNewChat();
+  setSendButtonState(false);
 });
 
 chatBody.addEventListener("scroll", () => {
@@ -1166,4 +1297,3 @@ document.addEventListener("visibilitychange", () => {
 
 </body>
 </html>
-
