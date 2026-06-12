@@ -7,7 +7,7 @@ import re
 import hashlib
 import os
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder="static")
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "dev-change-this-secret")
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(BASE_DIR, "memory.db")
@@ -18,7 +18,7 @@ SERVER_CONNECTION_ERROR = "خطای اتصال به سرور"
 # ===============================
 # تنظیمات API
 # ===============================
-AVAL_API_KEY = "aa-hKTwRT5ktYvyMvQ9byUL4YGhKgnlXUiU3ZP7UFb4VDDDJnF7"
+AVAL_API_KEY = "aa-8JB3BoLPfV2WwDNFSPJz7jvUpqYnjfZr82k6qcE1E62e6lcV"
 AVAL_API_URL = "https://api.avalai.ir/v1/chat/completions"
 
 # ===============================
@@ -1093,7 +1093,11 @@ def resolve_guest_id(raw_guest_id):
 def index():
     return render_template("index.html")
 
+from flask import send_from_directory
 
+@app.route('/static/<path:filename>')
+def static_files(filename):
+    return send_from_directory('static', filename)
 
 
 @app.route("/api/chat", methods=["POST"])
