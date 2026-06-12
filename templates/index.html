@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <title>Siria AI </title>
-<link rel="icon" type="image/png" href="/static/طراحی بدون عنوان (1).png">
+<link rel="icon" type="image/png" href="/static/1.png">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;700&display=swap" rel="stylesheet">
@@ -16,7 +16,7 @@
   --text-muted: #888888;
 }
 * { box-sizing: border-box; margin:0; padding:0; -webkit-tap-highlight-color: transparent;}
-body { font-family: 'Poppins', sans-serif; height:100vh; display:flex; flex-direction:column; background:#fff; overflow:hidden; }
+body { font-family: 'Poppins', sans-serif; height:100vh; display:flex; flex-direction:column; background:#fff; overflow-x:hidden; }
 .ai-loader {
   display: flex;
   gap: 6px;
@@ -110,7 +110,7 @@ body { font-family: 'Poppins', sans-serif; height:100vh; display:flex; flex-dire
   padding: 14px;
   transition: 0.25s;
   z-index: 25;
-  height: 100vh;
+  height:100dvh;
   overflow-y: auto;
 
 
@@ -139,7 +139,7 @@ body { font-family: 'Poppins', sans-serif; height:100vh; display:flex; flex-dire
 
   margin-top: 10px;
   margin-bottom: 10px;
-
+  min-height:0;
 }
 
 .history-container::-webkit-scrollbar{
@@ -159,8 +159,7 @@ body { font-family: 'Poppins', sans-serif; height:100vh; display:flex; flex-dire
 #backdrop.active { opacity:1; pointer-events:auto; }
 
 /* چت */
-.chat { flex:1; display:flex; flex-direction:column; overflow:hidden; position: relative; 
-  height: 100vh;}
+.chat { flex:1; display:flex; flex-direction:column; overflow:hidden; position: relative;}
 .chat-body { 
   flex:1;
   width:100%;
@@ -170,6 +169,9 @@ body { font-family: 'Poppins', sans-serif; height:100vh; display:flex; flex-dire
   scrollbar-width: none; /* Firefox */
   padding-bottom: 110px;
   margin: 0 auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  scroll-behavior: smooth;
  }
 .chat-body::-webkit-scrollbar {
     display: none; /* Chrome, Edge, Safari */
@@ -252,7 +254,7 @@ body { font-family: 'Poppins', sans-serif; height:100vh; display:flex; flex-dire
   background: #ef4444;
 }
 
-.input-box.active { position:fixed; top:auto; bottom:22px; left:50%; transform:translateX(-50%); }
+.input-box.active { position:fixed; top:auto; bottom:40px; left:50%; transform:translateX(-50%); }
 
 
 
@@ -457,7 +459,11 @@ body { font-family: 'Poppins', sans-serif; height:100vh; display:flex; flex-dire
     justify-content: center;
     align-items: center;
     flex-shrink: 0;
+    position: sticky;
+    bottom: 10px;
     margin-top: auto;
+    z-index: 10;
+
 }
 
 
@@ -467,8 +473,25 @@ body { font-family: 'Poppins', sans-serif; height:100vh; display:flex; flex-dire
 }
 .prtyt{display:flex;position: sticky; background-color: rgb(0, 0, 0); }
 /* پایین صفحه متن کم‌رنگ */
-.footer-text { text-align:center; color:var(--text-muted); font-size:12px; padding:1px; margin-top: auto;}
+.footer-text {
+  text-align:center;
+  color:var(--text-muted);
+  font-size:12px;
 
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+
+  bottom:8px; /* دسکتاپ */
+  width: 100%;
+  z-index: 5;
+}
+
+@media(max-width:768px){
+  .footer-text{
+    bottom:8px;
+  }
+}
 /* ریسپانسیو */
 @media(max-width:768px){
   .msg { max-width:88%; }
@@ -535,7 +558,7 @@ body { font-family: 'Poppins', sans-serif; height:100vh; display:flex; flex-dire
       </svg>
     </button>
     <div class="imc">
-      <img src="/static/siria b.png">
+      <img src="/static/siria-b.png">
     </div>
   </div>
   <div class="sidebar-user" id="sidebarUser">Guest</div>
@@ -631,7 +654,9 @@ const signupForm = document.getElementById("signupForm");
 const authStatus = document.getElementById("authStatus");
 const sidebarUser = document.getElementById("sidebarUser");
 const togglePassBtns = document.querySelectorAll(".toggle-pass");
-
+let userScrolling = false;
+let userIsInteracting = false;
+let scrollTimeout = null;
 let autoScrollAI = false;
 let chats = [];
 let activeChatId = null;
@@ -663,7 +688,6 @@ function setSendButtonState(isGenerating) {
 const welcomeTexts = [
   "? How can I help you",
   "? What is in your mind",
-  "? Ready to chat with Siria",
   "! Ask me anything",
   "? Where should we begin"
 ];
@@ -912,7 +936,7 @@ function renderAI(text, typing = true) {
 
   const avatar = document.createElement("div");
   avatar.className = "avatar";
-  avatar.innerHTML = `<img src="/static/siria b.png">`;
+  avatar.innerHTML = `<img src="/static/siria-b.png">`;
 
   const msg = document.createElement("div");
   msg.className = "msg ai";
@@ -931,9 +955,10 @@ function renderAI(text, typing = true) {
     typeEffect(msg, text, loader);
   } else {
     msg.innerHTML = parseMarkdown(text);
-    scrollDown(true);
-  }
-}
+    if (autoScrollAI) {
+      scrollDown();
+    }
+}}
 
 function renderAIPending() {
   const wrap = document.createElement("div");
@@ -941,7 +966,7 @@ function renderAIPending() {
 
   const avatar = document.createElement("div");
   avatar.className = "avatar";
-  avatar.innerHTML = `<img src="/static/siria b.png">`;
+  avatar.innerHTML = `<img src="/static/siria-b.png">`;
 
   const msg = document.createElement("div");
   msg.className = "msg ai";
@@ -1012,7 +1037,9 @@ function typeEffect(el, text, loader=null, meta = {}, onDone = null) {
   const interval = setInterval(() => {
     el.innerText += plain[i];
     i++;
-    scrollDown(true);
+    if (!userIsInteracting && isNearBottom()) {
+      chatBody.scrollTop = chatBody.scrollHeight;
+    }
     if (i >= plain.length) {
       clearInterval(interval);
       if (loader) loader.remove();
@@ -1040,13 +1067,24 @@ function parseMarkdown(text) {
    SCROLL
 ======================= */
 function isNearBottom() {
-  return chatEl.scrollHeight - (chatEl.scrollTop + chatEl.clientHeight) < 120;
+  return chatBody.scrollHeight - (chatBody.scrollTop + chatBody.clientHeight) < 120;
 }
 
-function scrollDown(force=false) {
-  if (force || isNearBottom()) chatEl.scrollTop = chatEl.scrollHeight;
-}
+function scrollDown(force = false) {
+  requestAnimationFrame(() => {
+    const distanceFromBottom =
+      chatBody.scrollHeight - (chatBody.scrollTop + chatBody.clientHeight);
 
+    const isAtBottom = distanceFromBottom < 120;
+
+    const shouldAutoScroll =
+      force || (autoScrollAI && !userIsInteracting && isAtBottom);
+
+    if (shouldAutoScroll) {
+      chatBody.scrollTop = chatBody.scrollHeight;
+    }
+  });
+}
 /* =======================
    SEND MESSAGE
 ======================= */
@@ -1078,7 +1116,7 @@ async function send() {
 
   const avatar = document.createElement("div");
   avatar.className = "avatar";
-  avatar.innerHTML = `<img src="/static/siria b.png">`;
+  avatar.innerHTML = `<img src="/static/siria-b.png">`;
 
   const msg = document.createElement("div");
   msg.className = "msg ai";
@@ -1237,14 +1275,38 @@ inputEl.addEventListener("keydown", e => {
     send();
   }
 });
+chatBody.addEventListener("scroll", () => {
+  const nearBottom =
+    chatBody.scrollHeight - (chatBody.scrollTop + chatBody.clientHeight) < 80;
 
+  autoScrollAI = nearBottom;
+
+  clearTimeout(scrollTimeout);
+  scrollTimeout = setTimeout(() => {
+    userScrolling = false;
+  }, 1500);
+});
 inputEl.addEventListener("input", () => {
   inputEl.style.height = "auto";
   inputEl.style.height = inputEl.scrollHeight + "px";
 });
 
 sendBtn.addEventListener("click", send);
+chatBody.addEventListener("wheel", () => {
+  userIsInteracting = true;
+  clearTimeout(scrollTimeout);
+  scrollTimeout = setTimeout(() => {
+    userIsInteracting = false;
+  }, 1200);
+}, { passive: true });
 
+chatBody.addEventListener("touchmove", () => {
+  userIsInteracting = true;
+  clearTimeout(scrollTimeout);
+  scrollTimeout = setTimeout(() => {
+    userIsInteracting = false;
+  }, 1200);
+}, { passive: true });
 /* =======================
    SIDEBAR
 ======================= */
@@ -1365,7 +1427,8 @@ window.addEventListener("DOMContentLoaded", async () => {
 
 chatBody.addEventListener("scroll", () => {
   nav.classList.toggle("scrolled", chatBody.scrollTop > 40);
-  if (!isNearBottom()) autoScrollAI = false;
+
+  autoScrollAI = isNearBottom();
 });
 
 window.addEventListener("resize", () => {
@@ -1375,6 +1438,7 @@ window.addEventListener("blur", finishTyping);
 document.addEventListener("visibilitychange", () => {
   if (document.hidden) finishTyping();
 });
+
 </script>
 
 </body>
