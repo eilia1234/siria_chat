@@ -1093,11 +1093,7 @@ def resolve_guest_id(raw_guest_id):
 def index():
     return render_template("index.html")
 
-from flask import send_from_directory
 
-@app.route('/static/<path:filename>')
-def static_files(filename):
-    return send_from_directory('static', filename)
 
 
 @app.route("/api/chat", methods=["POST"])
@@ -1145,7 +1141,7 @@ def chat():
     }
 
     payload = {
-        "model": "gemini-2.5-flash",
+        "model": "gpt-4o-mini",
         "messages": messages,
         "temperature": 0.7
     }
@@ -1213,7 +1209,7 @@ def chat_v2():
     }
 
     payload = {
-        "model": "gemini-2.5-pro",
+        "model": "gpt-4o-mini",
         "messages": messages,
         "temperature": 0.7
     }
