@@ -168,10 +168,14 @@ body { font-family: 'Poppins', sans-serif; height:100vh; display:flex; flex-dire
   overflow-y:auto;
   scrollbar-width: none; /* Firefox */
   padding-bottom: 110px;
-  margin: 0 auto;
+  margin: 0 370px;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
   scroll-behavior: smooth;
+  display:flex;
+  margin-bottom: 90px;
+  flex-direction:column;
+  align-items:flex-end;
  }
 .chat-body::-webkit-scrollbar {
     display: none; /* Chrome, Edge, Safari */
@@ -191,7 +195,17 @@ body { font-family: 'Poppins', sans-serif; height:100vh; display:flex; flex-dire
 .ai pre { background:#111827; color:#fff; padding:12px; border-radius:10px; overflow-x:auto; direction:ltr; font-family: 'Vazirmatn', 'Poppins', sans-serif;}
 .ai code { color:#01922a; font-family:monospace;font-family: 'Vazirmatn', 'Poppins', sans-serif; }
 
-
+.input-area-bg {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 95px;
+  background: #fff;
+  z-index: 9;
+  display: none;
+}
+.input-area-bg.active { display: block; }
 .input-box {
   top:50%;
   display:flex;
@@ -484,7 +498,8 @@ body { font-family: 'Poppins', sans-serif; height:100vh; display:flex; flex-dire
 
   bottom:8px; /* دسکتاپ */
   width: 100%;
-  z-index: 5;
+  z-index: 11;
+  pointer-events: none;
 }
 
 @media(max-width:768px){
@@ -623,12 +638,13 @@ body { font-family: 'Poppins', sans-serif; height:100vh; display:flex; flex-dire
 <div id="welcomeMsg"></div>
 <div class="chat">
   <div class="chat-body" id="chat"></div>
+  <div class="input-area-bg" id="inputAreaBg"></div>
   <div class="input-box" id="inputBox">
     <textarea id="input" placeholder="Ask anything" rows="1"></textarea>
     <div class="send-icon" id="sendBtn">➤</div>
   </div>
+  <div class="footer-text">. Siria can make mistakes</div>
 </div>
-<div class="footer-text">. Siria can make mistakes</div>
 <script>
 /* =======================
    ELEMENTS
@@ -920,6 +936,7 @@ function updateChatViewportState() {
 function renderUser(text) {
   if (!firstMessageSent) {
     inputBox.classList.add("active");
+    document.getElementById("inputAreaBg").classList.add("active");
     hideWelcome();
     firstMessageSent = true;
   }
